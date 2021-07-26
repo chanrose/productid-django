@@ -1,8 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, reverse
 from web3 import Web3, WebsocketProvider, HTTPProvider
 from django.shortcuts import render
 from django.views import generic
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from time import sleep
 from django.contrib import messages
 
@@ -341,8 +341,26 @@ def run_transaction(tx, pk):
   print(tx_receipt)
   return tx_receipt
 
+def isLogin():
+  if len(acc['pk']) and len(acc['sender']):
+    return True
+  return False
+
 class Index(generic.TemplateView):
   template_name = 'pidapp/index.html'
+
+class Dashboard(generic.TemplateView):
+  template_name = 'pidapp/dashboard.html'
+
+  def get(self, *args, **kwargs):
+    if isLogin():
+      context = {
+        'name': acc['name']
+      }
+      print("you're login", context)
+    else:
+      return redirect(reverse('pidapp:login'))
+    return render(self.request, self.template_name, dict())
 
 class Login(generic.TemplateView):
   template_name = 'auth/login.html'
@@ -350,20 +368,17 @@ class Login(generic.TemplateView):
   def post(self, *args, **kwargs):
     if self.request.is_ajax and self.request.method == "POST":
       pub, pw = w3.toChecksumAddress(self.request.POST.get("username", None)), self.request.POST.get("password", None)
-      try:
-        pk = get_secret_key(pub, pw.encode())
-        name = get_company_account_name(pub)
-        if (len(pk) and len(pub)):
-          acc['sender'], acc['pk'], acc['name'] = pub, pk, name
-          context = {'pub': pub, 'name': name}
-          messages.info(self.request, "Login completed!")
-          return render(self.request, self.template_name, context)
-        else:
-          messages.warning(self.request, "Login failed, please try again")
-          return JsonResponse({"status": False}, status=400)
-    return JsonResponse({}, status=400)
-
-
+      pk = get_secret_key(pub, pw.encode())
+      name = get_company_account_name(pub)
+      if (len(pk) and len(pub)):
+        acc['sender'], acc['pk'], acc['name'] = pub, pk, name
+        context = {'pub': pub, 'name': name}
+        print("Reaching here?", context)
+        messages.info(self.request, "Login completed!")
+        return redirect(reverse('pidapp:dashboard'))
+      else:
+        messages.warning(self.request, "Login failed, please try again")
+        return JsonResponse({"status": False}, status=400)
 
 class Register(generic.TemplateView):
   template_name = 'auth/register.html'

@@ -76,6 +76,8 @@
             url: "{% url 'pidapp:login' %}",
             data: serializeData,
             success: res => {
+                console.log(res)
+                window.location.href = '{% url 'pidapp:dashboard' %}'
             },
             error: res => {
             }
