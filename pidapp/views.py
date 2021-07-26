@@ -398,5 +398,10 @@ class Register(generic.TemplateView):
       return JsonResponse({"status": False}, status=400)
     return JsonResponse({}, status=400)
 
+def logout(request):
+  acc['sender'], acc['pk'], acc['name'] = '', '', ''
+  messages.info(request, "Sign out completed")
+  return redirect(reverse('pidapp:login'))
+
 
 
