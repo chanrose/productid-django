@@ -1,0 +1,98 @@
+{% extends 'auth/base.html' %}
+{% load static %}
+{% block style %}
+html,
+body {
+height: 100%;
+}
+
+body {
+display: flex;
+align-items: center;
+padding-top: 40px;
+padding-bottom: 40px;
+background-color: #fff;
+}
+
+.form-signin {
+width: 100%;
+max-width: 330px;
+padding: 15px;
+margin: auto;
+}
+
+.form-signin .checkbox {
+font-weight: 400;
+}
+
+.form-signin .form-floating:focus-within {
+z-index: 2;
+}
+
+.form-signin input[type="email"] {
+margin-bottom: -1px;
+border-bottom-right-radius: 0;
+border-bottom-left-radius: 0;
+}
+
+.form-signin input[type="password"] {
+margin-bottom: 10px;
+border-top-left-radius: 0;
+border-top-right-radius: 0;
+}
+{% endblock %}    
+{% block body %}
+<div class="text-center">
+    <main class="form-signin">
+        <form id="signup">
+            {% csrf_token %}
+            <img class="mb-4" src="{% static '/images/mello.png' %}"  alt="" height="72">
+            <h1 class="h3 mb-3 fw-normal">Please sign Up</h1>
+            <div class="form-floating my-1">
+                <input type="text" name="company-name" class="form-control" id="floatingName" placeholder="Company Name">
+                <label for="floatingName">Company Name</label>
+            </div>
+
+            <div class="form-floating my-1">
+                <input type="text" name="pub" class="form-control" id="floatingInput" placeholder="username">
+                <label for="floatingInput">Username (Public Address)</label>
+            </div>
+            <div class="form-floating">
+                <input type="password" name="pk" class="form-control" id="floatingPrivateKey" placeholder="PrivateKey">
+                <label for="floatingPrivateKey">Private Key</label>
+            </div>
+
+            <div class="form-floating">
+                <input type="password" name="pw" class="form-control" id="floatingPassword" placeholder="Password">
+                <label for="floatingPassword">Password</label>
+            </div>
+
+            <button class="w-100 btn btn-lg btn-outline-primary" type="submit">Sign up</button>
+            <p class="my-1">Already have account? <a href="{% url 'pidapp:login' %}">Sign In</a></p>
+        </form>
+
+    </main>
+</div>
+{% endblock %}
+{% block script %}
+
+<script>
+    $("#signup").submit(function (e) {
+        e.preventDefault();
+        let serializeData = $(this).serialize();
+        console.log(serializeData);
+        $.ajax({
+            type: 'POST',
+            url: "{% url 'pidapp:register' %}",
+            data: serializeData,
+            success: res => {
+            },
+            error: res => {
+                Toasty("Sign up error", "Please contact the admin")
+            }
+        })
+
+    });
+
+</script>
+{% endblock %} 

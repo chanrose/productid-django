@@ -1,0 +1,86 @@
+{% extends 'auth/base.html' %}
+{% load static %}
+{% block style %}
+    html,
+    body {
+    height: 100%;
+    }
+
+    body {
+    display: flex;
+    align-items: center;
+    padding-top: 40px;
+    padding-bottom: 40px;
+    background-color: #fff;
+    }
+
+    .form-signin {
+    width: 100%;
+    max-width: 330px;
+    padding: 15px;
+    margin: auto;
+    }
+
+    .form-signin .checkbox {
+    font-weight: 400;
+    }
+
+    .form-signin .form-floating:focus-within {
+    z-index: 2;
+    }
+
+    .form-signin input[type="email"] {
+    margin-bottom: -1px;
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+    }
+
+    .form-signin input[type="password"] {
+    margin-bottom: 10px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    }
+{% endblock %}    
+{% block body %}
+    <div class="text-center">
+        <main class="form-signin">
+            <form id="signin">
+                {% csrf_token %}
+                <img class="mb-4" src="{% static '/images/mello.png' %}"  alt="" height="72">
+                <h1 class="h3 mb-3 fw-normal">Please sign in</h1>
+
+                <div class="form-floating my-1">
+                    <input type="text" name="username" class="form-control" id="floatingInput" placeholder="Public Address">
+                    <label for="floatingInput">Public Address</label>
+                </div>
+                <div class="form-floating">
+                    <input type="password" name="password" class="form-control" id="floatingPassword" placeholder="Password">
+                    <label for="floatingPassword">Password</label>
+                </div>
+
+                <button class="w-100 btn btn-lg btn-outline-primary" type="submit">Sign in</button>
+                <p class="my-1">Don't have account yet? <a href="{% url 'pidapp:register' %}">Sign Up</a></p>
+                         </form>
+
+        </main>
+    </div>
+{% endblock %}
+{% block script %}
+<script>
+  $("#signin").submit(function (e) {
+        e.preventDefault();
+        let serializeData = $(this).serialize();
+        console.log(serializeData);
+        $.ajax({
+            type: 'POST',
+            url: "{% url 'pidapp:login' %}",
+            data: serializeData,
+            success: res => {
+            },
+            error: res => {
+            }
+        })
+
+    });
+</script>
+    {% endblock %}
