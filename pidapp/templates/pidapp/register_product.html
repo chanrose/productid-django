@@ -61,7 +61,7 @@ $("#add_product").submit(function (e) {
                 Toasty("Product Registration", "Product registered successfully");
             },
             error: res => {
-                Toasty("Register Failed", "Please check your input again");
+                Toasty("Register Failed", res.error);
             }
         })
 

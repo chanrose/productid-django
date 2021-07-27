@@ -440,11 +440,19 @@ class Dashboard(generic.TemplateView):
     if not acc:
       return redirect(reverse('pidapp:login'))
     print("You're already login", acc)
-    list_products = get_list_of_products(acc['pub'])
-    first_prod = get_first_product(acc['pub'])
-    last_prod = get_last_product(acc['pub'])
-    list_products.pop()
-    context = {'products': list_products, 'first_prod': first_prod, 'last_prod': clean_bytes(last_prod)}
+    list_products, first_prod, last_prod = '', '', ''
+    context = dict()
+    try:
+      list_products = get_list_of_products(acc['pub'])
+      first_prod = get_first_product(acc['pub'])
+      last_prod = get_last_product(acc['pub'])
+      context = {'products': list_products, 'first_prod': first_prod, 'last_prod': clean_bytes(last_prod)}
+      list_products.pop()
+      context['num_products'] = len(list_products)
+      print("getting anything yet?", context)
+      return render(self.request, self.template_name, context)
+    except:
+      print("Error")
     return render(self.request, self.template_name, context)
 
 class Login(generic.TemplateView):
@@ -504,7 +512,7 @@ def logout(request):
 
 
 def validate_product_serial(_pk, _serial_key, _sender): 
-    tmp = get_product_prop(_pk.encode(), _sender)
+    tmp = get_product_prop(_pk, _sender)
     return _serial_key in tmp['serial_lists']
 
 class RegisterProduct(generic.TemplateView):
@@ -521,20 +529,22 @@ class RegisterProduct(generic.TemplateView):
       acc = isLogin(self.request)
       if not acc:
           return redirect(reverse('pidapp:login'))
-      print(acc)
       form = {'p-name': '', 'p-category': '', 'p-year': '', 'p-country': '', 'p-price': '', 'description':'', 'serial-lists': ''}
       for key, val in form.items():
         form[key] = self.request.POST.get(key, None)
       form['serial-lists'] = json.loads(form['serial-lists'])
+      print("Form", form)
       temp = form['serial-lists']
+      print("TEMP", temp)
       if len(temp) != len(set(temp)):
         messages.info(self.request, "Serial List must be unique")
-        return JsonResponse({}, status=400)
+        return JsonResponse({'error': "Serial key must be unique" }, status=400)
       pk = generate_pk(form['p-name'])
       temp = generate_arr(temp, 0, 10)
+      print("After Temp", form)
       result = register_product(pk.encode(), form['p-name'].encode(), form['p-category'].encode(), int(form['p-year']), int(form['p-price']), form['p-country'].encode(), form['description'], temp, acc['pub'], acc['pk'])
-      return JsonResponse({'new': f"You have registered product successfully"}, status=200)
-    return JsonResponse({}, status=400)
+      return JsonResponse({'new': "You have registered product successfully"}, status=200)
+    return JsonResponse({'error': 'error'}, status=400)
 
 class ViewProduct(generic.TemplateView):
   template_name = 'pidapp/view_product_unit.html'
@@ -575,8 +585,27 @@ class EditProduct(generic.TemplateView):
       return JsonResponse({'new': "Update successfully"}, status=200)
     return JsonResponse({}, status=400)
 
+def get_company_pk_list(_sender):
+    w3.eth.defaultAccount = _sender
+    tmp = pid.functions.get_list_of_company_acc().call()
+    new_list = []
+    for key, val in enumerate(tmp):
+        if '0x000' in val:
+            return new_list
+        new_list.append(val)
+    return new_list
+
 def validate_product(request):
-  print("Validation is workign", request.POST['prod_pk'])
-  return JsonResponse({}, status=200);
+  prod_pk, serial_key = request.POST['prod_pk'], request.POST['serial_key']
+  prod_pk, serial_key = prod_pk.encode(), int(serial_key)
+  print(prod_pk, serial_key, contract['owner'])
+  all = get_company_pk_list(contract['owner'])
+  isValid = False
+  for company in all:
+    isValid = validate_product_serial(prod_pk, serial_key, company)
+    if isValid:
+      break
+  print(isValid)
+  return JsonResponse({'result': isValid}, status=200);
 
 

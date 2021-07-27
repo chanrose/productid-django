@@ -39,7 +39,7 @@
                             <img src="{% static 'images/mello.png' %}" alt="mdo" class="rounded-circle" width="32" height="32">
                         </a>
                         <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser2" style="">
-                            <li><a class="dropdown-item" href="#">New Product...</a></li>
+                            <li><a class="dropdown-item" href="{% url 'pidapp:register_product' %}">New Product...</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'pidapp:logout' %}">Sign out</a></li>
                         </ul>
@@ -54,12 +54,9 @@
                     <ul class="list-group">
                         <li class="list-group-item" data-title='Index'> <a href="{% url 'pidapp:index' %}" class="text-decoration-none text-dark font-monospace">Index</a> </li>
                         <li class="list-group-item" data-title="Dashboard"> <a href="{% url 'pidapp:dashboard' %}"  class="text-decoration-none text-dark">Dashboard</a> </li>
-                        <li class="list-group-item"> <a href="" class="text-decoration-none text-dark">Search Item</a> </li>
                         <li class="list-group-item" data-title="Product Registration"> <a href="{% url 'pidapp:register_product' %}" class="text-decoration-none text-dark">Add Product</a> </li>
                         <li class="list-group-item" data-title="Edit Product"> <a href="" class="text-decoration-none text-dark">Update Product</a> </li>
                         <li class="list-group-item" data-title="View Product"> <a href="" class="text-decoration-none text-dark" >View Products</a> </li>
-                        <li class="list-group-item"> <a href="" class="text-decoration-none text-dark">Upcoming</a> </li>
-                        <li class="list-group-item"> <a href="" class="text-decoration-none text-dark">Upcoming</a> </li>
                     </ul>
                 </div>
                 <div class="bg-light border rounded-3">
@@ -148,7 +145,8 @@
                     url: "{% url 'pidapp:validate_product' %}",
                     data: serializeData,
                     success: res => {
-                        console.log(res)
+                        console.log("RESULT", res.result);
+                        Toasty("Validation Result", (res.result ? "Serial key is valid" : "Invalid serial key"));
                     },
                     error: res => {
                     }

@@ -4,14 +4,25 @@
 <div class="container">
     <h3> Your Latest Products </h3>
     <ul>
+        {% if last_prod %}
         <li><a href="{% url 'pidapp:view_product' last_prod %}"> {{ last_prod }} </a> </li>
+        {% else %}
+            There is no last products
+        {% endif %}
     </ul>
     <h3> List Products </h3>
     <ul>
+        {% if products %}
         {% for item in products %}
+        {% if item %}
         <li><a href="{% url 'pidapp:edit_product' item %}" class="text-danger">Edit</a> | <a href="{% url 'pidapp:view_product' item %}"> {{ item }}</a> </li>
+        {% endif %}
         {% endfor %}
+        {% else %}
+        Please create one product first
+        {% endif %}
     </ul>
+    <h3> Total Products: {% if num_products %} {{ num_products }} {% else %} None {% endif %}</h3>
 
 
 
