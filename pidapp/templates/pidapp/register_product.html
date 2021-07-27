@@ -1,0 +1,72 @@
+{% extends 'pidapp/base.html' %}
+{% block title %}Product Registration{% endblock %}
+{% block content %}
+Product Registration {{ request.session.acc.name }}
+<main>
+    <form id="add_product">
+        {% csrf_token %}
+        <div class="form-floating my-1">
+            <input type="text" name="p-name" class="form-control" id="floatingpName" placeholder="p-name" required>
+            <label for="floatingpName">Product Name</label>
+        </div>
+
+        <div class="form-floating my-1">
+            <input type="text" name="p-category" class="form-control" id="floatingpCategory" placeholder="Category" required>
+            <label for="floatingpCategory">Category</label>
+        </div>
+
+        <div class="form-floating my-1">
+            <input type="text" name="p-country" class="form-control" id="floatingpCountry" placeholder="Country" required>
+            <label for="floatingpCountry">Manufacture Country</label>
+        </div>
+
+        <div class="form-floating my-1">
+            <input type="number" name="p-year" class="form-control" id="floatingpPrice" placeholder="p-Year" required>
+            <label for="floatingpYear">Manufacture Year</label>
+        </div>
+
+
+        <div class="form-floating my-1">
+            <input type="number" name="p-price" class="form-control" id="floatingpPrice" placeholder="p-Price" required>
+            <label for="floatingpPrice">Price in USD</label>
+        </div>
+
+        <div class="form-floating my-1">
+            <textarea class="form-control" name="description" id="description" required>Description</textarea>
+        </div>
+      <div class="form-floating my-1">
+            <textarea class="form-control" name="serial-lists" id="serial-lists" required>[]</textarea>
+        </div>
+        <p class="text-muted"> Serials units may entered up until 10 different unique codes: [847291, 713124, 193123, 104123, 923124, 934123, 224123] </p>
+        <button class="w-100 btn btn-lg btn-outline-primary mt-1" type="submit">Register</button>
+    </form>
+
+</main>
+{% endblock %}
+
+
+{% block script %}
+<script>
+$("#add_product").submit(function (e) {
+        e.preventDefault();
+        let serializeData = $(this).serialize();
+        console.log(serializeData);
+        $.ajax({
+            type: 'POST',
+            url: "{% url 'pidapp:register_product' %}",
+            data: serializeData,
+            success: res => {
+                console.log(res);
+                this.reset()
+                Toasty("Product Registration", "Product registered successfully");
+            },
+            error: res => {
+                Toasty("Register Failed", "Please check your input again");
+            }
+        })
+
+    });
+</script>
+{% endblock %}
+
+

@@ -6,6 +6,7 @@ from django.http import JsonResponse, HttpResponse
 from time import sleep
 from django.contrib import messages
 from datetime import datetime
+import json
 
 # Create your views here.
 w3 = Web3(HTTPProvider("HTTP://127.0.0.1:7545"))
@@ -367,6 +368,62 @@ def run_transaction(tx, pk):
   print(tx_receipt)
   return tx_receipt
 
+def register_product(_pk, _name, _category, _release_year, _price, _country, _description, _serial_list, _sender, _key):
+    w3.eth.defaultAccount = _sender
+    nonce = w3.eth.getTransactionCount(_sender)
+    txn = pid.functions.register_product(_pk, _name, _category, _release_year, _price, _country, _description, _serial_list).buildTransaction({
+        'gas': 3000000,
+        'gasPrice': w3.toWei('1', 'gwei'),
+        'nonce': nonce
+    })
+    result = run_transaction(txn, _key)
+    return result
+
+def get_list_of_products(_sender):
+    w3.eth.defaultAccount = _sender
+    tmp = pid.functions.get_list_of_products(generate_arr([], b'0', 1000)).call()
+    new_list = []
+    for key, val in enumerate(tmp):
+        if str(clean_bytes(val)) != '0':
+            new_list.append(clean_bytes(val))
+    return new_list
+
+def get_first_product(_sender):
+    w3.eth.defaultAccount = _sender
+    return pid.functions.get_first_product().call()
+
+# Return the last product of the company acc
+def get_last_product(_sender):
+    w3.eth.defaultAccount = _sender
+    return pid.functions.get_last_product().call()
+
+def get_product_prop(_pk, _sender):
+    w3.eth.defaultAccount = _sender
+    tmp = pid.functions.get_product_prop(_pk).call()
+    tmp[5] = [val for val in tmp[5] if val != 0]
+    data = {
+        'name': clean_bytes(tmp[0][0]),
+        'category': clean_bytes(tmp[0][1]),
+        'release_year': tmp[1],
+        'price': tmp[2],
+        'country': clean_bytes(tmp[3]),
+        'description': tmp[4],
+        'serial_lists': tmp[5]
+    } 
+    return data
+
+def update_product(_target_pk, _name, _category, _price, _description, _sender, _key):
+    w3.eth.defaultAccount = _sender
+    nonce = w3.eth.getTransactionCount(_sender)
+    txn = pid.functions.update_product(_target_pk, _name, _category, _price,_description).buildTransaction({
+        'gas': 3000000,
+        'gasPrice': w3.toWei('1', 'gwei'),
+        'nonce': nonce
+    })
+    signed_txn = w3.eth.account.signTransaction(txn, private_key=_key)
+    signed_txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+    return w3.eth.waitForTransactionReceipt(signed_txn_hash)
+
 def isLogin(request):
   if request.session.get('acc', False):
     return request.session['acc']
@@ -383,11 +440,12 @@ class Dashboard(generic.TemplateView):
     if not acc:
       return redirect(reverse('pidapp:login'))
     print("You're already login", acc)
-    context = {
-      'name': acc['name']
-    }
-    print("you're login", context)
-    return render(self.request, self.template_name, dict())
+    list_products = get_list_of_products(acc['pub'])
+    first_prod = get_first_product(acc['pub'])
+    last_prod = get_last_product(acc['pub'])
+    list_products.pop()
+    context = {'products': list_products, 'first_prod': first_prod, 'last_prod': clean_bytes(last_prod)}
+    return render(self.request, self.template_name, context)
 
 class Login(generic.TemplateView):
   template_name = 'auth/login.html'
@@ -443,5 +501,82 @@ def logout(request):
   messages.info(request, "Sign out completed")
   return redirect(reverse('pidapp:login'))
 
+
+
+def validate_product_serial(_pk, _serial_key, _sender): 
+    tmp = get_product_prop(_pk.encode(), _sender)
+    return _serial_key in tmp['serial_lists']
+
+class RegisterProduct(generic.TemplateView):
+  template_name = 'pidapp/register_product.html'
+
+  def get(self, *args, **kwargs):
+    acc = isLogin(self.request)
+    if not acc:
+      return redirect(reverse('pidapp:login'))
+    return render(self.request, self.template_name, dict())
+
+  def post(self, *args, **kwargs):
+    if self.request.is_ajax and self.request.method == "POST":
+      acc = isLogin(self.request)
+      if not acc:
+          return redirect(reverse('pidapp:login'))
+      print(acc)
+      form = {'p-name': '', 'p-category': '', 'p-year': '', 'p-country': '', 'p-price': '', 'description':'', 'serial-lists': ''}
+      for key, val in form.items():
+        form[key] = self.request.POST.get(key, None)
+      form['serial-lists'] = json.loads(form['serial-lists'])
+      temp = form['serial-lists']
+      if len(temp) != len(set(temp)):
+        messages.info(self.request, "Serial List must be unique")
+        return JsonResponse({}, status=400)
+      pk = generate_pk(form['p-name'])
+      temp = generate_arr(temp, 0, 10)
+      result = register_product(pk.encode(), form['p-name'].encode(), form['p-category'].encode(), int(form['p-year']), int(form['p-price']), form['p-country'].encode(), form['description'], temp, acc['pub'], acc['pk'])
+      return JsonResponse({'new': f"You have registered product successfully"}, status=200)
+    return JsonResponse({}, status=400)
+
+class ViewProduct(generic.TemplateView):
+  template_name = 'pidapp/view_product_unit.html'
+
+  def get(self, *args, **kwargs):
+    acc = isLogin(self.request)
+    if not acc:
+      return redirect(reverse('pidapp:login'))
+    prod_pk = self.kwargs['prod_pk']
+    context = get_product_prop(prod_pk.encode(), acc['pub'])
+    context['prod_pk'] = prod_pk
+    return render(self.request, self.template_name, context)
+
+class EditProduct(generic.TemplateView):
+  template_name = 'pidapp/edit_product.html'
+
+  def get(self, *args, **kwargs):
+    acc = isLogin(self.request)
+    if not acc:
+      return redirect(reverse('pidapp:login'))
+    prod_pk = self.kwargs['prod_pk']
+    context = get_product_prop(prod_pk.encode(), acc['pub'])
+    context['prod_pk'] = prod_pk 
+    return render(self.request, self.template_name, context)
+
+  def post(self, *args, **kwargs):
+    if self.request.is_ajax and self.request.method == "POST":
+      acc = isLogin(self.request)
+      if not acc:
+          return redirect(reverse('pidapp:login'))
+      print(acc)
+      prod_pk = self.request.POST.get('prod_pk')
+      form = {'p-name': '', 'p-category': '', 'p-price': '', 'description':''}
+      for key, val in form.items():
+        form[key] = self.request.POST.get(key, None)
+      messages.info(self.request, "You have registered a product")
+      result = update_product(prod_pk.encode(), form['p-name'].encode(), form['p-category'].encode(), int(form['p-price']), form['description'], acc['pub'], acc['pk'])
+      return JsonResponse({'new': "Update successfully"}, status=200)
+    return JsonResponse({}, status=400)
+
+def validate_product(request):
+  print("Validation is workign", request.POST['prod_pk'])
+  return JsonResponse({}, status=200);
 
 

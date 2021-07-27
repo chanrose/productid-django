@@ -1,13 +1,28 @@
 {% extends 'pidapp/base.html' %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-    You're at dashboard
+<div class="container">
+    <h3> Your Latest Products </h3>
+    <ul>
+        <li><a href="{% url 'pidapp:view_product' last_prod %}"> {{ last_prod }} </a> </li>
+    </ul>
+    <h3> List Products </h3>
+    <ul>
+        {% for item in products %}
+        <li><a href="{% url 'pidapp:edit_product' item %}" class="text-danger">Edit</a> | <a href="{% url 'pidapp:view_product' item %}"> {{ item }}</a> </li>
+        {% endfor %}
+    </ul>
+
+
+
+
+</div>
 {% endblock %}
 
 
 {% block script %}
 <script>
-console.log("testing")
+    console.log("testing")
 </script>
 {% endblock %}
 

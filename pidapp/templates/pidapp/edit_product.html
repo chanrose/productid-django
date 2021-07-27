@@ -1,0 +1,64 @@
+{% extends 'pidapp/base.html' %}
+{% block title %}Edit Product{% endblock %}
+{% block content %}
+Updating Product!
+<main>
+    <form id="update_product">
+        {% csrf_token %}
+        <div class="form-floating my-1">
+            <input type="text" name="p-name" class="form-control" id="floatingpName" placeholder="p-name" value="{{ name }}" required>
+            <label for="floatingpName">Product Name</label>
+        </div>
+
+        <div class="form-floating my-1">
+            <input type="text" name="p-category" class="form-control" id="floatingpCategory" placeholder="Category" value="{{ category }}" required>
+            <label for="floatingpCategory">Category</label>
+        </div>
+
+        <div class="form-floating my-1">
+            <input type="number" name="p-price" class="form-control" id="floatingpPrice" placeholder="p-Price" value="{{ price }}" required>
+            <label for="floatingpPrice">Price in USD</label>
+        </div>
+        <input type="hidden" name="prod_pk" value="{{ prod_pk }}" />
+
+        <div class="form-floating my-1">
+            <textarea class="form-control" name="description" id="description" required>{{ description }}</textarea>
+        </div>
+       <button class="w-100 btn btn-lg btn-outline-primary mt-1" type="submit">Update</button>
+       <div class="my-1">
+        <a class="text-decoration-none" href="{% url 'pidapp:dashboard' %}"> Go Back | </a>
+        <a class="text-decoration-none text-secondary" href="{% url 'pidapp:view_product' prod_pk %}" >View Product</a>
+        </div>
+
+
+    </form>
+
+</main>
+{% endblock %}
+
+
+{% block script %}
+<script>
+$("#update_product").submit(function (e) {
+        e.preventDefault();
+        let serializeData = $(this).serialize();
+        console.log(serializeData);
+        $.ajax({
+            type: 'POST',
+            url: "{% url 'pidapp:edit_product' prod_pk %}",
+            data: serializeData,
+            success: res => {
+                console.log(res);
+                Toasty("Update!", res['new']);
+                location.reload()
+            },
+            error: res => {
+                Toasty("Register Failed", "Please check your input again");
+            }
+        })
+
+    });
+</script>
+{% endblock %}
+
+

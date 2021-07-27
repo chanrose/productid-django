@@ -1,0 +1,27 @@
+{% extends 'pidapp/base.html' %}
+{% block title %}View Product{% endblock %}
+{% block content %}
+<div class="container">
+    <h3> {{ name }} </h3>
+    <ul>
+        <li> {{ category }} </li>
+        <li> {{ release_year }} </li>
+        <li> {{ price }} USD </li>
+        <li> {{ country }} </li>
+        <li> {{ description }} </li>
+        <li> {{ serial_lists }} </li>
+    </ul>
+    <a href="{% url 'pidapp:dashboard' %}"> Go Back </a> | 
+    <a href="{% url 'pidapp:edit_product' prod_pk %}" class="text-danger"> Edit ? </a>
+</div>
+
+{% endblock %}
+
+
+{% block script %}
+<script>
+    console.log("testing")
+</script>
+{% endblock %}
+
+
