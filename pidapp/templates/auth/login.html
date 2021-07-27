@@ -80,6 +80,7 @@
                 window.location.href = '{% url 'pidapp:dashboard' %}'
             },
             error: res => {
+                Toasty("Login Failed", "Please double check your credential");
             }
         })
 

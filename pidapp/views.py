@@ -10,11 +10,7 @@ import json
 
 # Create your views here.
 w3 = Web3(HTTPProvider("HTTP://127.0.0.1:7545"))
-acc = {
-  'sender': '',
-  'pk': '',
-  'name': '',
-}
+
 contract = {
     'owner': '',
     'address': "0x632442372726AD0A21Cb4C10862F48D219dA1A61",
@@ -475,8 +471,7 @@ class Login(generic.TemplateView):
         messages.info(self.request, "Login completed!")
         return redirect(reverse('pidapp:dashboard'))
       else:
-        messages.warning(self.request, "Login failed, please try again")
-        return JsonResponse({"status": False}, status=400)
+        return JsonResponse({"error": True}, status=400)
 
 class Register(generic.TemplateView):
   template_name = 'auth/register.html'
