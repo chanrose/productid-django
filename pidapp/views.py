@@ -5,6 +5,7 @@ from django.views import generic
 from django.http import JsonResponse, HttpResponse
 from time import sleep
 from django.contrib import messages
+from datetime import datetime
 
 # Create your views here.
 w3 = Web3(HTTPProvider("HTTP://127.0.0.1:7545"))
@@ -14,7 +15,8 @@ acc = {
   'name': '',
 }
 contract = {
-    'address': "0x560a99A9E230371E7177504169db120842c48800",
+    'owner': '',
+    'address': "0x632442372726AD0A21Cb4C10862F48D219dA1A61",
     'abi': '''[
     {
       "anonymous": false,
@@ -72,7 +74,7 @@ contract = {
       "type": "constructor"
     },
     {
-      "gas": 1169400,
+      "gas": 589400,
       "inputs": [
         {
           "name": "_password",
@@ -90,7 +92,7 @@ contract = {
       "type": "function"
     },
     {
-      "gas": 1432177,
+      "gas": 852177,
       "inputs": [
         {
           "name": "_name",
@@ -124,7 +126,7 @@ contract = {
       "type": "function"
     },
     {
-      "gas": 1938063,
+      "gas": 1358063,
       "inputs": [
         {
           "name": "_pk",
@@ -165,7 +167,7 @@ contract = {
       "type": "function"
     },
     {
-      "gas": 763754314,
+      "gas": 763174314,
       "inputs": [
         {
           "name": "_target_product_pk",
@@ -194,7 +196,20 @@ contract = {
       "type": "function"
     },
     {
-      "gas": 2695118,
+      "gas": 446888,
+      "inputs": [],
+      "name": "get_list_of_company_acc",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address[500]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "gas": 2115148,
       "inputs": [
         {
           "name": "_arr",
@@ -212,7 +227,7 @@ contract = {
       "type": "function"
     },
     {
-      "gas": 28022747,
+      "gas": 28022777,
       "inputs": [
         {
           "name": "_pk",
@@ -250,7 +265,7 @@ contract = {
       "type": "function"
     },
     {
-      "gas": 1162180,
+      "gas": 582210,
       "inputs": [],
       "name": "get_first_product",
       "outputs": [
@@ -263,7 +278,7 @@ contract = {
       "type": "function"
     },
     {
-      "gas": 1163400,
+      "gas": 583430,
       "inputs": [],
       "name": "get_last_product",
       "outputs": [
@@ -276,7 +291,7 @@ contract = {
       "type": "function"
     },
     {
-      "gas": 1358,
+      "gas": 1388,
       "inputs": [],
       "name": "contract_owner",
       "outputs": [
@@ -292,6 +307,7 @@ contract = {
 }
 
 pid = w3.eth.contract(address=contract['address'], abi=contract['abi'])
+contract['owner'] = pid.functions.contract_owner().call()
 
 # Internal Function
 # Generating custom array 
@@ -318,6 +334,16 @@ def get_company_account_name(_sender):
     w3.eth.defaultAccount = _sender
     return clean_bytes(pid.functions.get_company_account_name().call())
 
+def get_company_name_list(_sender):
+    w3.eth.defaultAccount = _sender
+    tmp = pid.functions.get_list_of_company_acc().call()
+    new_list = []
+    for key, val in enumerate(tmp):
+        if '0x000' in val:
+            return new_list
+        new_list.append(get_company_account_name(val))
+    return new_list
+
 def register_company_account(_sender, _name, _sec, _pw):
     nonce = w3.eth.getTransactionCount(_sender)
     txn = pid.functions.register_company_account(_name, _sec, _pw).buildTransaction({
@@ -341,9 +367,9 @@ def run_transaction(tx, pk):
   print(tx_receipt)
   return tx_receipt
 
-def isLogin():
-  if len(acc['pk']) and len(acc['sender']):
-    return True
+def isLogin(request):
+  if request.session.get('acc', False):
+    return request.session['acc']
   return False
 
 class Index(generic.TemplateView):
@@ -353,13 +379,14 @@ class Dashboard(generic.TemplateView):
   template_name = 'pidapp/dashboard.html'
 
   def get(self, *args, **kwargs):
-    if isLogin():
-      context = {
-        'name': acc['name']
-      }
-      print("you're login", context)
-    else:
+    acc = isLogin(self.request)
+    if not acc:
       return redirect(reverse('pidapp:login'))
+    print("You're already login", acc)
+    context = {
+      'name': acc['name']
+    }
+    print("you're login", context)
     return render(self.request, self.template_name, dict())
 
 class Login(generic.TemplateView):
@@ -371,9 +398,14 @@ class Login(generic.TemplateView):
       pk = get_secret_key(pub, pw.encode())
       name = get_company_account_name(pub)
       if (len(pk) and len(pub)):
-        acc['sender'], acc['pk'], acc['name'] = pub, pk, name
         context = {'pub': pub, 'name': name}
         print("Reaching here?", context)
+        self.request.session['acc'] = {
+          'pub': pub,
+          'name': name,
+          'login': True,
+          'pk': pk
+        }
         messages.info(self.request, "Login completed!")
         return redirect(reverse('pidapp:dashboard'))
       else:
@@ -383,6 +415,11 @@ class Login(generic.TemplateView):
 class Register(generic.TemplateView):
   template_name = 'auth/register.html'
 
+  def get(self, *args, **kwargs):
+    company_names = get_company_name_list(contract['owner'])
+    print(company_names)
+    return render(self.request, self.template_name, {'used': company_names})
+ 
   def post(self, *args, **kwargs):
     if self.request.is_ajax and self.request.method == "POST":
       name, pub, pk, pw = self.request.POST.get('company-name', None), w3.toChecksumAddress(self.request.POST.get("pub", None)), self.request.POST.get("pk", None), self.request.POST.get("pw", None) 
@@ -391,7 +428,7 @@ class Register(generic.TemplateView):
       try:
         result = register_company_account(pub, name, pk, pw)
         print(result)
-        return JsonResponse({"status":True}, status=200)
+        return redirect(reverse('pidapp:login'))
       except ValueError:
         messages.info(self.request, "You already registered")
       messages.warning(self.request, "Sign up failed, you can contact the admin")
@@ -399,7 +436,10 @@ class Register(generic.TemplateView):
     return JsonResponse({}, status=400)
 
 def logout(request):
-  acc['sender'], acc['pk'], acc['name'] = '', '', ''
+  try:
+    del request.session['acc']
+  except KeyError:
+    pass
   messages.info(request, "Sign out completed")
   return redirect(reverse('pidapp:login'))
 

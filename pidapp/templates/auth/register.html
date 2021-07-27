@@ -1,5 +1,6 @@
 {% extends 'auth/base.html' %}
 {% load static %}
+{% block title %} Sign Up {% endblock %}
 {% block style %}
 html,
 body {
@@ -49,21 +50,21 @@ border-top-right-radius: 0;
             <img class="mb-4" src="{% static '/images/mello.png' %}"  alt="" height="72">
             <h1 class="h3 mb-3 fw-normal">Please sign Up</h1>
             <div class="form-floating my-1">
-                <input type="text" name="company-name" class="form-control" id="floatingName" placeholder="Company Name">
+                <input type="text" name="company-name" class="form-control" id="floatingName" placeholder="Company Name" required>
                 <label for="floatingName">Company Name</label>
             </div>
 
             <div class="form-floating my-1">
-                <input type="text" name="pub" class="form-control" id="floatingInput" placeholder="username">
+                <input type="text" name="pub" class="form-control" id="floatingInput" placeholder="username" required>
                 <label for="floatingInput">Username (Public Address)</label>
             </div>
             <div class="form-floating">
-                <input type="password" name="pk" class="form-control" id="floatingPrivateKey" placeholder="PrivateKey">
+                <input type="password" name="pk" class="form-control" id="floatingPrivateKey" placeholder="PrivateKey" required>
                 <label for="floatingPrivateKey">Private Key</label>
             </div>
 
             <div class="form-floating">
-                <input type="password" name="pw" class="form-control" id="floatingPassword" placeholder="Password">
+                <input type="password" name="pw" class="form-control" id="floatingPassword" placeholder="Password" required>
                 <label for="floatingPassword">Password</label>
             </div>
 
@@ -77,8 +78,22 @@ border-top-right-radius: 0;
 {% block script %}
 
 <script>
+    let used = "{{ used|safe}}";
+    let new_list = [];
+        let test = used.split(", ");
+        test[test.length-1] = test[test.length-1].substring(0, test[test.length-1].length - 1);
+        test[0] = test[0].substring(1, test[0].length);
+        for (i of test) {
+            new_list.push(i.substring(1, i.length - 1));
+        }
+        console.log("Test", new_list);
+     
     $("#signup").submit(function (e) {
         e.preventDefault();
+        if (new_list.includes($("input[name=company-name]")[0].value)) {
+            Toasty("Validate name failed", "Please pick different name");
+            return;
+            }
         let serializeData = $(this).serialize();
         console.log(serializeData);
         $.ajax({
@@ -86,9 +101,10 @@ border-top-right-radius: 0;
             url: "{% url 'pidapp:register' %}",
             data: serializeData,
             success: res => {
+                window.location.href = "{% url 'pidapp:login' %}";
             },
             error: res => {
-                Toasty("Sign up error", "Please contact the admin")
+                Toasty("Sign up failed", "Please double check your account")
             }
         })
 
